@@ -1,0 +1,5 @@
+- 2018.09.26
+  - Modify the PLL algorithm to Second-order generalized integrator implementation.
+- 2018.10.23
+  - Modify the PWM configuration, synchronize EPWM1 and EPWM2 
+  - Optimize the sampling, reading, and calculation time of AD7606 to finally 7us.
