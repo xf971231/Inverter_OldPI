@@ -32,4 +32,5 @@ void AD7606_Start(void) ;
 void AD7606_XINTF_Read_All(void);
 // float AD7606_Read(int * channel) ;
 void AD7606_PostSampleDo(void);
+void filter_AD7606();
 #endif

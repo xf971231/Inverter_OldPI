@@ -6,8 +6,14 @@
 
 float MeasureBuf[8] = {380.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 float MeasureBuf_prev[8] = { 380.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
+volatile int MeasureBuf_filter[4] = {0,0,0,0};
+volatile int MeasureBuf_filter_before[4] = {0,0,0,0};
+
 int count_ad7606 = 0, i_ad7606 = 0;
-volatile int temp[8] ;
+volatile int temp[8],temp_filter[8] ;
+
+void filter_AD7606();
 
 void AD7606_Init(void)
 {
@@ -164,15 +170,28 @@ void AD7606_XINTF_Read_All(void){
 //        Result_Buf[i] = temp[j] * AD7606_REF_RESOLUTION ;
 //    }
     // DC Voltage and Capacitor Current should be calculated first
-    MeasureBuf[CH_DC_BUS] = temp[CH_DC_BUS] * DC_VOLTAGE_MUL + DC_MEASURE_OFFSET;
-    MeasureBuf[CH_CAP_CURRENT] = temp[CH_CAP_CURRENT] * IC_CURRENT_MUL + IC_MEASURE_OFFSET;
+    filter_AD7606();
+    MeasureBuf[CH_DC_BUS] = MeasureBuf_filter[CH_DC_BUS] * DC_VOLTAGE_MUL + DC_MEASURE_OFFSET;
+    MeasureBuf[CH_CAP_CURRENT] = MeasureBuf_filter[CH_CAP_CURRENT] * IC_CURRENT_MUL + IC_MEASURE_OFFSET;
 
     //SCOPE_PD ;
 }
 
 void AD7606_PostSampleDo(){
     // AC Voltage and Grid Current can be calculated later ;
-    MeasureBuf[CH_AC_VOLTAGE] = temp[(count_ad7606 + CH_AC_VOLTAGE) % 8] * AC_VOLTAGE_MUL + AC_MEASURE_OFFSET;
-    MeasureBuf[CH_GRID_CURRENT] = temp[(count_ad7606 + CH_GRID_CURRENT) % 8] * IG_CURRENT_MUL + IG_MEASURE_OFFSET ;
+    MeasureBuf[CH_AC_VOLTAGE] = MeasureBuf_filter[(count_ad7606 + CH_AC_VOLTAGE) % 8] * AC_VOLTAGE_MUL + AC_MEASURE_OFFSET;
+    MeasureBuf[CH_GRID_CURRENT] = MeasureBuf_filter[(count_ad7606 + CH_GRID_CURRENT) % 8] * IG_CURRENT_MUL + IG_MEASURE_OFFSET ;
 }
 
+
+//AD7606采样的低通滤波器设计
+void filter_AD7606(){
+    Uint16 i = 0 ;
+    Uint16 frequency = 10000;
+    Uint16 alpha = 500;
+    for(i = 0 ; i < 4; i ++){
+        MeasureBuf_filter[i] = temp[i] * alpha + frequency * MeasureBuf_filter_before[i];
+        MeasureBuf_filter[i] = (int) MeasureBuf_filter[i] /(frequency + alpha);
+        MeasureBuf_filter_before[i] = MeasureBuf_filter[i];
+    }
+}

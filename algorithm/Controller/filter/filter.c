@@ -36,3 +36,5 @@ void filter_init(filter_s * fs, const float * num_c, const float * den_c, const 
         fs->num_coeff[i] = num_c[i] ;
     }
 }
+
+
